@@ -1,2 +1,4 @@
 core
-
+vendor
+.env
+composer.phar
