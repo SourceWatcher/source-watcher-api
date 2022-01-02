@@ -12,7 +12,7 @@
     "php": ">=7.4",
     "doctrine/orm": "^2.9",
     "ext-pdo": "*",
-    "firebase/php-jwt": "^5.4",
+    "firebase/php-jwt": "^5.5.1",
     "monolog/monolog": "^2.3",
     "robmorgan/phinx": "^0.12.7",
     "vlucas/phpdotenv": "^5.3"

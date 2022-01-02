@@ -1,6 +1,6 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace Coco\SourceWatcherApi\Security\v1;
+namespace Coco\SourceWatcherApi\Security;
 
 class User
 {

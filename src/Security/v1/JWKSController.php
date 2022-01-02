@@ -1,9 +1,10 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Coco\SourceWatcherApi\Security\v1;
 
 use Coco\SourceWatcherApi\Framework\Controller;
 use Coco\SourceWatcherApi\Framework\ResponseCodes;
+use Coco\SourceWatcherApi\Security\JWKSHelper;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
@@ -23,10 +24,10 @@ class JWKSController extends Controller
      */
     public function __construct()
     {
-        $logPath = join('/', [__DIR__, '..', '..', '..', 'logs', time() . '.log']);
+        $logPath = join( '/', [__DIR__, '..', '..', '..', 'logs', time() . '.log'] );
 
-        $this->log = new Logger(JWKSController::class);
-        $this->log->pushHandler(new StreamHandler($logPath, Logger::INFO));
+        $this->log = new Logger( JWKSController::class );
+        $this->log->pushHandler( new StreamHandler( $logPath, Logger::INFO ) );
 
         parent::__construct();
     }
@@ -37,42 +38,18 @@ class JWKSController extends Controller
      * @param string $requestMethod
      * @param array $extraOptions
      */
-    public function processRequest(string $requestMethod, array $extraOptions): void
+    public function processRequest( string $requestMethod, array $extraOptions ): void
     {
-        if ($requestMethod === 'GET') {
-            header(ResponseCodes::OK);
+        if ( $requestMethod === 'GET' ) {
+            header( ResponseCodes::OK );
 
-            echo json_encode(['keys' => [$this->getJWK($extraOptions)]]);
+            $jwksHelper = new JWKSHelper();
+
+            echo json_encode( ['keys' => [$jwksHelper->getJWK()]] );
         } else {
-            header(ResponseCodes::BAD_REQUEST);
+            header( ResponseCodes::BAD_REQUEST );
 
-            echo json_encode(['message' => 'unsupported method']);
+            echo json_encode( ['message' => 'unsupported method'] );
         }
-    }
-
-    /**
-     * Allows returning the JSON Web Key.
-     * @return array
-     */
-    private function getJWK(): array
-    {
-        $details = openssl_pkey_get_details(
-            openssl_pkey_get_public(
-                file_get_contents(
-                    join('/', [__DIR__, 'keys', 'current', 'public.pem'])
-                )
-            )
-        );
-
-        $rsa = $details['rsa'];
-
-        return [
-            'kty' => 'RSA',
-            'e' => base64_encode($rsa['e']),
-            'use' => 'sig',
-            'kid' => '',
-            'alg' => '',
-            'n' => base64_encode($rsa['n'])
-        ];
     }
 }

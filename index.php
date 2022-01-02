@@ -21,10 +21,11 @@ $uri = explode("/", $uri);
 $allowedControllers = [
     "api" => [
         "v1" => [
-            "credentials" => "Coco\\SourceWatcherApi\\Security\\v1\CredentialsController",
             ".well-known" => [
                 "jwks.json" => "Coco\\SourceWatcherApi\\Security\\v1\\JWKSController"
             ],
+            "credentials" => "Coco\\SourceWatcherApi\\Security\\v1\CredentialsController",
+            "database-seeding" => "Coco\\SourceWatcherApi\\Database\\v1\\DatabaseSeedingController",
             "item" => [
                 // api/v1/item or api/v1/item/
                 "" => "Coco\\SourceWatcherApi\\Core\\Item\\ItemController",

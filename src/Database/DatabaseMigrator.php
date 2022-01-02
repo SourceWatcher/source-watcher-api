@@ -1,8 +1,6 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Coco\SourceWatcherApi\Database;
-
-require __DIR__ . "/../../vendor/autoload.php";
 
 use Phinx\Config\Config;
 use Phinx\Migration\Manager;
@@ -80,19 +78,20 @@ class DatabaseMigrator
      * Allows migrating the database.
      * @param string $databaseName
      */
-    public function migrateDatabase(string $databaseName): void
+    public function migrateDatabase( string $databaseName ): void
     {
-        $manager = $this->getManager($databaseName);
-        $manager->migrate("development");
+        $manager = $this->getManager( $databaseName );
+        $manager->migrate( "development" );
     }
 
     /**
      * Allows seeding the database.
      * @param string $databaseName
+     * @param string|null $seed
      */
-    public function seedDatabase(string $databaseName): void
+    public function seedDatabase( string $databaseName, string $seed = null ): void
     {
-        $manager = $this->getManager($databaseName);
-        $manager->seed("development");
+        $manager = $this->getManager( $databaseName );
+        $manager->seed( "development", $seed );
     }
 }

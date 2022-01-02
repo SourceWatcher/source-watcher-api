@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Coco\SourceWatcherApi\Security\v1;
 
@@ -6,6 +6,8 @@ use Coco\SourceWatcherApi\Framework\ApiResponse;
 use Coco\SourceWatcherApi\Framework\Controller;
 use Coco\SourceWatcherApi\Framework\Exception as FrameworkException;
 use Coco\SourceWatcherApi\Framework\ResponseCodes;
+use Coco\SourceWatcherApi\Security\JWKSHelper;
+use Coco\SourceWatcherApi\Security\UserDAO;
 use Firebase\JWT\JWT;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -103,9 +105,13 @@ class CredentialsController extends Controller
             "eat" => $expiresAt
         ];
 
-        $privateKey = file_get_contents( join( '/', [__DIR__, 'keys', 'current', 'private.pem'] ) );
+        $jwksHelper = new JWKSHelper();
 
-        $accessToken = JWT::encode( $payload, $privateKey, 'RS256' );
+        $privateKey = $jwksHelper->getPrivateKey();
+        $alg = 'RS256';
+        $key = $jwksHelper->getJWK();
+
+        $accessToken = JWT::encode( $payload, $privateKey, $alg, $key['kid'] );
 
         return $this->makeResponse( ResponseCodes::OK, $accessToken );
     }

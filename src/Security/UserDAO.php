@@ -1,6 +1,6 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace Coco\SourceWatcherApi\Security\v1;
+namespace Coco\SourceWatcherApi\Security;
 
 use Coco\SourceWatcherApi\Framework\DAO;
 use Coco\SourceWatcherApi\Framework\Exception as FrameworkException;
@@ -34,7 +34,7 @@ class UserDAO extends DAO
             $user->setUsername( $username );
 
             while ( ( $row = $resultSet->fetchAssociative() ) !== false ) {
-                $user->setId( $row["id"] );
+                $user->setId( intval( $row["id"] ) );
                 $user->setPassword( $row["password"] );
                 $user->setEmail( $row["email"] );
             }
