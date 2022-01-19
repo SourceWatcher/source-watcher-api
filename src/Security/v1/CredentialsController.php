@@ -7,6 +7,7 @@ use Coco\SourceWatcherApi\Framework\Controller;
 use Coco\SourceWatcherApi\Framework\Exception as FrameworkException;
 use Coco\SourceWatcherApi\Framework\ResponseCodes;
 use Coco\SourceWatcherApi\Security\JWKSHelper;
+use Coco\SourceWatcherApi\Security\RefreshTokenDAO;
 use Coco\SourceWatcherApi\Security\UserDAO;
 use Firebase\JWT\JWT;
 use Monolog\Handler\StreamHandler;
@@ -36,29 +37,6 @@ class CredentialsController extends Controller
         $this->log->pushHandler( new StreamHandler( $logPath, Logger::INFO ) );
 
         parent::__construct();
-    }
-
-    /**
-     * Allows processing the request to the endpoint.
-     * @param string $requestMethod
-     * @param array $extraOptions
-     */
-    public function processRequest( string $requestMethod, array $extraOptions ): void
-    {
-        $response = null;
-
-        if ( $requestMethod == 'POST' ) {
-            $response = $this->validateCredentials();
-        }
-        else {
-            $response = $this->notFoundResponse();
-        }
-
-        header( $response['status_code_header'] );
-
-        if ( $response['body'] ) {
-            echo $response['body'];
-        }
     }
 
     /**
@@ -113,6 +91,41 @@ class CredentialsController extends Controller
 
         $accessToken = JWT::encode( $payload, $privateKey, $alg, $key['kid'] );
 
-        return $this->makeResponse( ResponseCodes::OK, $accessToken );
+        $refreshToken = $jwksHelper->getRefreshToken();
+
+        try {
+            $refreshTokenDao = new RefreshTokenDAO();
+            $refreshTokenDao->insertRefreshToken( $user->getId(), $refreshToken );
+        }
+        catch ( FrameworkException $exception ) {
+            return $this->makeResponse( ResponseCodes::INTERNAL_SERVER_ERROR, $exception->getMessage() );
+        }
+
+        $response = ['accessToken' => $accessToken, 'refreshToken' => $refreshToken];
+
+        return $this->makeArrayResponse( ResponseCodes::OK, $response );
+    }
+
+    /**
+     * Allows processing the request to the endpoint.
+     * @param string $requestMethod
+     * @param array $extraOptions
+     */
+    public function processRequest( string $requestMethod, array $extraOptions ): void
+    {
+        $response = null;
+
+        if ( $requestMethod == 'POST' ) {
+            $response = $this->validateCredentials();
+        }
+        else {
+            $response = $this->notFoundResponse();
+        }
+
+        header( $response['status_code_header'] );
+
+        if ( $response['body'] ) {
+            echo $response['body'];
+        }
     }
 }

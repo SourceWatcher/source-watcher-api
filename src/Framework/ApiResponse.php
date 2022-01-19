@@ -20,4 +20,17 @@ trait ApiResponse
 
         return ['status_code_header' => $httpCode, 'body' => json_encode( $body )];
     }
+
+    /**
+     * @param string $httpCode
+     * @param array|null $body
+     * @return array|string[]
+     */
+    public function makeArrayResponse( string $httpCode, array $body = null ): array {
+        if ( empty( $body ) ) {
+            return ['status_code_header' => $httpCode];
+        }
+
+        return ['status_code_header' => $httpCode, 'body' => json_encode( $body )];
+    }
 }
