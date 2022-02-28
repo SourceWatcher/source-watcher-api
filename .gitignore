@@ -1,4 +1,5 @@
-core
-vendor
 .env
 composer.phar
+core
+logs/*.log
+vendor
