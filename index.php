@@ -4,9 +4,16 @@ error_reporting(E_ERROR | E_PARSE);
 
 require_once(__DIR__ . "/vendor/autoload.php");
 
-use Dotenv\Dotenv;
+use Coco\SourceWatcherApi\Core\Item\ItemController;
 use Coco\SourceWatcherApi\Database\DatabaseMigrator;
+use Coco\SourceWatcherApi\Database\v1\DatabaseSeedingController;
+use Coco\SourceWatcherApi\Database\v1\DbConnectionTypeController;
 use Coco\SourceWatcherApi\Framework\ResponseCodes;
+use Coco\SourceWatcherApi\Security\Credentials\v1\CredentialsController;
+use Coco\SourceWatcherApi\Security\JWKS\v1\JWKSController;
+use Coco\SourceWatcherApi\Security\JWT\JWTHelper;
+use Coco\SourceWatcherApi\Security\JWT\v1\JWTController;
+use Dotenv\Dotenv;
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
@@ -22,20 +29,29 @@ $allowedControllers = [
     "api" => [
         "v1" => [
             ".well-known" => [
-                "jwks.json" => "Coco\\SourceWatcherApi\\Security\\JWKS\\v1\\JWKSController"
+                "jwks.json" => JWKSController::class
             ],
-            "credentials" => "Coco\\SourceWatcherApi\\Security\\v1\\CredentialsController",
-            "database-seeding" => "Coco\\SourceWatcherApi\\Database\\v1\\DatabaseSeedingController",
+            "credentials" => CredentialsController::class,
+            "database-seeding" => DatabaseSeedingController::class,
+            "db-connection-type" => DbConnectionTypeController::class,
             "item" => [
                 // api/v1/item or api/v1/item/
-                "" => "Coco\\SourceWatcherApi\\Core\\Item\\ItemController",
+                "" => ItemController::class,
 
                 // api/v1/item/123
-                "/" . "^[0-9]+" . "/" => "Coco\\SourceWatcherApi\\Core\\Item\\ItemController"
+                "/" . "^[0-9]+" . "/" => ItemController::class
             ],
-            "jwt" => "Coco\\SourceWatcherApi\\Security\\JWT\\v1\\JWTController"
+            "jwt" => JWTController::class
         ]
     ]
+];
+
+$authenticationSettings = [
+    CredentialsController::class => false,
+    DatabaseSeedingController::class => true,
+    DbConnectionTypeController::class => true,
+    JWKSController::class => false,
+    JWTController::class => false
 ];
 
 /**
@@ -78,6 +94,8 @@ function getEndpointValue($index, $uri, $allowedControllers): array
     return getEndpointValue($index + 1, $uri, $value);
 }
 
+// Run database migrations
+
 try {
     Dotenv::createImmutable(__DIR__)->load();
 
@@ -106,5 +124,38 @@ if (empty($className)) {
 }
 
 $object = new $className();
+
+if ($authenticationSettings[$className] == true) {
+    $accessToken = $_REQUEST['access_token'];
+    $refreshToken = $_REQUEST['refresh_token'];
+
+    if (empty($accessToken)) {
+        $response = $object->makeResponse(ResponseCodes::BAD_REQUEST, 'Missing JWT');
+
+        header($response['status_code_header']);
+
+        if ($response['body']) {
+            echo $response['body'];
+        }
+
+        exit();
+    }
+
+    $jwtHelper = new JWTHelper();
+    $jwtIsValid = $jwtHelper->jwtIsValid($accessToken);
+
+    if (!$jwtIsValid) {
+        $response = $object->makeResponse(ResponseCodes::UNAUTHORIZED, 'Invalid JWT');
+
+        header($response['status_code_header']);
+
+        if ($response['body']) {
+            echo $response['body'];
+        }
+
+        exit();
+    }
+}
+
 $object->setRequestData($_REQUEST);
 $object->processRequest($_SERVER["REQUEST_METHOD"], [$requestedEndpoint[1]]);
