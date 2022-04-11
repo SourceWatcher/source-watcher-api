@@ -20,7 +20,7 @@ class JWKSController extends Controller
      */
     public function __construct()
     {
-        $logPath = join( '/', [__DIR__, '..', '..', '..', 'logs', time() . '.log'] );
+        $logPath = join( '/', [__DIR__, '..', '..', '..', '..', 'logs', time() . '.log'] );
 
         $this->log = new Logger( JWKSController::class );
         $this->log->pushHandler( new StreamHandler( $logPath, Logger::INFO ) );

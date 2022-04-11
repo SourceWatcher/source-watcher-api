@@ -13,12 +13,13 @@ trait ApiResponse
      * @param string|null $body
      * @return array
      */
-    public function makeResponse( string $httpCode, string $body = null ): array {
-        if ( empty( $body ) ) {
+    public function makeResponse(string $httpCode, string $body = null): array
+    {
+        if (empty($body)) {
             return ['status_code_header' => $httpCode];
         }
 
-        return ['status_code_header' => $httpCode, 'body' => json_encode( $body )];
+        return ['status_code_header' => $httpCode, 'body' => json_encode($body)];
     }
 
     /**
@@ -26,11 +27,12 @@ trait ApiResponse
      * @param array|null $body
      * @return array
      */
-    public function makeArrayResponse( string $httpCode, array $body = null ): array {
-        if ( empty( $body ) ) {
+    public function makeArrayResponse(string $httpCode, array $body = null): array
+    {
+        if (empty($body)) {
             return ['status_code_header' => $httpCode];
         }
 
-        return ['status_code_header' => $httpCode, 'body' => json_encode( $body )];
+        return ['status_code_header' => $httpCode, 'body' => json_encode($body)];
     }
 }

@@ -5,25 +5,22 @@ namespace Coco\SourceWatcherApi\Security\JWT\v1;
 use Coco\SourceWatcherApi\Framework\ApiResponse;
 use Coco\SourceWatcherApi\Framework\Controller;
 use Coco\SourceWatcherApi\Framework\ResponseCodes;
-use Coco\SourceWatcherApi\Security\JWKS\JWKSHelper;
+use Coco\SourceWatcherApi\Security\JWT\JWTHelper;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
+/**
+ * This endpoint verifies if an access token is valid or not.
+ */
 class JWTController extends Controller
 {
     use ApiResponse;
 
-    /**
-     * @var Logger
-     */
     private Logger $log;
 
-    /**
-     * DatabaseSeedingController constructor.
-     */
     public function __construct()
     {
-        $logPath = join('/', [__DIR__, '..', '..', '..', 'logs', time() . '.log']);
+        $logPath = join('/', [__DIR__, '..', '..', '..', '..', 'logs', time() . '.log']);
 
         $this->log = new Logger(JWTController::class);
         $this->log->pushHandler(new StreamHandler($logPath, Logger::INFO));
@@ -31,11 +28,6 @@ class JWTController extends Controller
         parent::__construct();
     }
 
-    /**
-     * Allows processing the request to the endpoint.
-     * @param string $requestMethod
-     * @param array $extraOptions
-     */
     public function processRequest(string $requestMethod, array $extraOptions): void
     {
         if ($requestMethod == 'POST') {
@@ -51,9 +43,6 @@ class JWTController extends Controller
         }
     }
 
-    /**
-     * @return array
-     */
     private function validateJWT(): array
     {
         $jwt = $_SERVER['HTTP_X_ACCESS_TOKEN'];
@@ -62,8 +51,8 @@ class JWTController extends Controller
             return $this->makeResponse(ResponseCodes::BAD_REQUEST, 'Missing JWT');
         }
 
-        $jwksHelper = new JWKSHelper();
-        $jwtIsValid = $jwksHelper->jwtIsValid($jwt);
+        $jwtHelper = new JWTHelper();
+        $jwtIsValid = $jwtHelper->jwtIsValid($jwt);
 
         if (!$jwtIsValid) {
             $this->log->info(

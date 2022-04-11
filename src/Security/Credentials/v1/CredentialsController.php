@@ -1,18 +1,25 @@
 <?php declare(strict_types=1);
 
-namespace Coco\SourceWatcherApi\Security\v1;
+namespace Coco\SourceWatcherApi\Security\Credentials\v1;
 
 use Coco\SourceWatcherApi\Framework\ApiResponse;
 use Coco\SourceWatcherApi\Framework\Controller;
 use Coco\SourceWatcherApi\Framework\Exception as FrameworkException;
 use Coco\SourceWatcherApi\Framework\ResponseCodes;
+use Coco\SourceWatcherApi\Security\Constants as SecurityConstants;
 use Coco\SourceWatcherApi\Security\JWKS\JWKSHelper;
+use Coco\SourceWatcherApi\Security\JWT\JWTHelper;
 use Coco\SourceWatcherApi\Security\Refresh\RefreshTokenDAO;
+use Coco\SourceWatcherApi\Security\Refresh\RefreshTokenHelper;
 use Coco\SourceWatcherApi\Security\User\UserDAO;
 use Firebase\JWT\JWT;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
+/**
+ * This endpoint verifies the user credentials with a username and password.
+ * If the credentials are valid, it will return an access token and a refresh token.
+ */
 class CredentialsController extends Controller
 {
     use ApiResponse;
@@ -27,7 +34,7 @@ class CredentialsController extends Controller
      */
     public function __construct()
     {
-        $logPath = join('/', [__DIR__, '..', '..', '..', 'logs', time() . '.log']);
+        $logPath = join('/', [__DIR__, '..', '..', '..', '..', 'logs', time() . '.log']);
 
         $this->log = new Logger(CredentialsController::class);
         $this->log->pushHandler(new StreamHandler($logPath, Logger::INFO));
@@ -88,23 +95,19 @@ class CredentialsController extends Controller
             return $this->makeResponse(ResponseCodes::UNAUTHORIZED, 'Wrong credentials');
         }
 
-        $payload = [
-            'data' => ['userId' => $user->getId()],
-            "iss" => $_SERVER['HTTP_HOST'],
-            "aud" => $_SERVER['HTTP_HOST'],
-            "iat" => strtotime( 'now' ),
-            "eat" => strtotime( '+1 hour' )
-        ];
+        $jwtHelper = new JWTHelper();
 
         $jwksHelper = new JWKSHelper();
-
-        $privateKey = $jwksHelper->getPrivateKey();
-        $alg = 'RS256';
         $key = $jwksHelper->getJWK();
 
-        $accessToken = JWT::encode($payload, $privateKey, $alg, $key['kid']);
+        $accessToken = JWT::encode(
+            $jwtHelper->getPayload($user->getId()),
+            $jwksHelper->getPrivateKey(),
+            SecurityConstants::ALGORITHM,
+            $key['kid']
+        );
 
-        $refreshToken = $jwksHelper->getRefreshToken();
+        $refreshToken = RefreshTokenHelper::getRefreshToken();
 
         try {
             $refreshTokenDao = new RefreshTokenDAO();
@@ -112,6 +115,11 @@ class CredentialsController extends Controller
         } catch (FrameworkException $exception) {
             return $this->makeResponse(ResponseCodes::INTERNAL_SERVER_ERROR, $exception->getMessage());
         }
+
+        $expiresAt = strtotime(SecurityConstants::JWT_EXPIRATION_TIME);
+
+        setcookie('access_token', $accessToken, $expiresAt, '/', 'localhost', true);
+        setcookie('refresh_token', $refreshToken, $expiresAt, '/', 'localhost', true);
 
         $response = ['accessToken' => $accessToken, 'refreshToken' => $refreshToken];
 
