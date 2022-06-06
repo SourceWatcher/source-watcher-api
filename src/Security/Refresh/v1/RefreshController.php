@@ -56,7 +56,7 @@ class RefreshController extends Controller
 
             $data = $jwtDecoded->data;
 
-            $userId = $data['userId'];
+            $userId = $data->userId;
 
             $refreshTokenDao = new RefreshTokenDAO();
 

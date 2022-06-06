@@ -88,7 +88,7 @@ class RefreshTokenDAO extends DAO
     public function deleteRefreshToken(int $userId, string $value): void
     {
         try {
-            $sqlInstruction = "DELETE refresh_token WHERE user_id = ? AND value = ?;";
+            $sqlInstruction = "DELETE FROM refresh_token WHERE user_id = ? AND value = ?;";
 
             $connection = $this->getConnection();
 

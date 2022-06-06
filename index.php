@@ -13,6 +13,7 @@ use Coco\SourceWatcherApi\Security\Credentials\v1\CredentialsController;
 use Coco\SourceWatcherApi\Security\JWKS\v1\JWKSController;
 use Coco\SourceWatcherApi\Security\JWT\JWTHelper;
 use Coco\SourceWatcherApi\Security\JWT\v1\JWTController;
+use Coco\SourceWatcherApi\Security\Refresh\v1\RefreshController;
 use Dotenv\Dotenv;
 
 header("Access-Control-Allow-Origin: *");
@@ -41,7 +42,8 @@ $allowedControllers = [
                 // api/v1/item/123
                 "/" . "^[0-9]+" . "/" => ItemController::class
             ],
-            "jwt" => JWTController::class
+            "jwt" => JWTController::class,
+            "refresh-token" => RefreshController::class,
         ]
     ]
 ];
