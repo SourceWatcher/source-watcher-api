@@ -6,6 +6,7 @@ require_once(__DIR__ . "/vendor/autoload.php");
 
 use Coco\SourceWatcherApi\Core\Item\ItemController;
 use Coco\SourceWatcherApi\Database\DatabaseMigrator;
+use Coco\SourceWatcherApi\Pipeline\v1\StepsController;
 use Coco\SourceWatcherApi\Database\v1\DatabaseSeedingController;
 use Coco\SourceWatcherApi\Database\v1\DbConnectionTypeController;
 use Coco\SourceWatcherApi\Framework\ResponseCodes;
@@ -13,14 +14,28 @@ use Coco\SourceWatcherApi\Security\Credentials\v1\CredentialsController;
 use Coco\SourceWatcherApi\Security\JWKS\v1\JWKSController;
 use Coco\SourceWatcherApi\Security\JWT\JWTHelper;
 use Coco\SourceWatcherApi\Security\JWT\v1\JWTController;
+use Coco\SourceWatcherApi\Security\Logout\v1\LogoutController;
 use Coco\SourceWatcherApi\Security\Refresh\v1\RefreshController;
 use Dotenv\Dotenv;
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE");
-header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+// CORS: allow board (e.g. http://localhost:8080) to call API with credentials (cookies).
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowedOrigins = ['http://localhost:8080', 'http://127.0.0.1:8080'];
+if (in_array($origin, $allowedOrigins, true)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Credentials: true');
+} else {
+    header('Access-Control-Allow-Origin: *');
+}
+header('Content-Type: application/json; charset=UTF-8');
+header('Access-Control-Allow-Methods: OPTIONS, GET, POST, PUT, DELETE');
+header('Access-Control-Max-Age: 3600');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, x-access-token, x-refresh-token');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit();
+}
 
 $uri = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 
@@ -43,7 +58,9 @@ $allowedControllers = [
                 "/" . "^[0-9]+" . "/" => ItemController::class
             ],
             "jwt" => JWTController::class,
+            "logout" => LogoutController::class,
             "refresh-token" => RefreshController::class,
+            "steps" => StepsController::class,
         ]
     ]
 ];
@@ -55,7 +72,9 @@ $authenticationSettings = [
     ItemController::class => true,
     JWKSController::class => false,
     JWTController::class => false,
+    LogoutController::class => false,
     RefreshController::class => false,
+    StepsController::class => false,
 ];
 
 /**
@@ -101,7 +120,18 @@ function getEndpointValue($index, $uri, $allowedControllers): array
 // Run database migrations
 
 try {
-    Dotenv::createImmutable(__DIR__)->load();
+    $envPath = __DIR__;
+    if (is_file($envPath . '/.env')) {
+        Dotenv::createImmutable($envPath)->load();
+    } else {
+        // No .env (e.g. Docker with env from compose): use getenv() so $_ENV is populated
+        foreach (['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS', 'DB_PORT', 'DB_CHARSET', 'DB_DRIVER', 'DB_ADAPTER'] as $key) {
+            $val = getenv($key);
+            if ($val !== false) {
+                $_ENV[$key] = $val;
+            }
+        }
+    }
 
     $dbHost = $_ENV["DB_HOST"];
     $dbName = $_ENV["DB_NAME"];
@@ -112,7 +142,31 @@ try {
     $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $databaseMigrator = new DatabaseMigrator();
-    $databaseMigrator->migrateDatabase($dbName);
+    try {
+        $databaseMigrator->migrateDatabase($dbName);
+    } catch (\Throwable $e) {
+        $msg = $e->getMessage();
+        $prev = $e->getPrevious();
+        if ($prev) {
+            $msg .= $prev->getMessage();
+        }
+        // Phinx may throw when phinxlog table already exists (e.g. concurrent or repeated runs)
+        if (strpos($msg, 'phinxlog') !== false && strpos($msg, 'already exists') !== false) {
+            // Schema table exists; continue with the request
+        } else {
+            throw $e;
+        }
+    }
+
+    // Ensure default user exists (e.g. fresh Docker DB): seed if users table is empty
+    try {
+        $userCount = $connection->query("SELECT COUNT(*) FROM users")->fetchColumn();
+        if ((int) $userCount === 0) {
+            $databaseMigrator->seedDatabase($dbName, 'UserSeeder');
+        }
+    } catch (PDOException $e) {
+        // Table may not exist yet; ignore
+    }
 } catch (PDOException $e) {
     header(ResponseCodes::NOT_FOUND);
     exit();

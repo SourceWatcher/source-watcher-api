@@ -83,9 +83,11 @@ class RefreshController extends Controller
             $refreshTokenDao->insertRefreshToken($userId, $newRefreshToken);
 
             $expiresAt = strtotime(SecurityConstants::JWT_EXPIRATION_TIME);
+            $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
-            setcookie('access_token', $newAccessToken, $expiresAt, '/', 'localhost', true);
-            setcookie('refresh_token', $newRefreshToken, $expiresAt, '/', 'localhost', true);
+            setcookie('access_token', $newAccessToken, $expiresAt, '/', 'localhost', $secure);
+            setcookie('refresh_token', $newRefreshToken, $expiresAt, '/', 'localhost', $secure);
 
             $response = ['accessToken' => $newAccessToken, 'refreshToken' => $newRefreshToken];
 

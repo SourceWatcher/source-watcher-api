@@ -36,7 +36,26 @@ On each request, the API runs Phinx migrations for the configured database, then
 
 ## Running the API
 
-Run with PHP’s built-in server (for development):
+### Option 1: Docker (API + MySQL)
+
+Install dependencies first (see Installation) so `vendor/` exists, then from the **API** directory:
+
+```bash
+docker compose up -d --build api
+```
+
+- **API:** http://localhost:8181/
+- The compose starts the API and a MySQL service; `DB_*` are set in `docker-compose.yml` (no `.env` required for a basic run).
+
+To stop:
+
+```bash
+docker compose down
+```
+
+### Option 2: PHP built-in server (development)
+
+Run with PHP’s built-in server (requires MySQL running elsewhere and a `.env` file):
 
 ```bash
 php -S localhost:8181 -t .

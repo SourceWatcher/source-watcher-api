@@ -75,7 +75,10 @@ class DatabaseSeedingController extends Controller
             return $this->makeResponse(ResponseCodes::BAD_REQUEST, 'Wrong seed');
         }
 
-        Dotenv::createImmutable(join('/', [__DIR__, '..', '..', '..']))->load();
+        $apiRoot = join('/', [__DIR__, '..', '..', '..']);
+        if (is_file($apiRoot . '/.env')) {
+            Dotenv::createImmutable($apiRoot)->load();
+        }
 
         $databaseMigrator = new DatabaseMigrator();
         $databaseMigrator->seedDatabase($_ENV['DB_NAME'], $seed);
