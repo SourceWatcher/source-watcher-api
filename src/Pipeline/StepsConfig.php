@@ -19,7 +19,7 @@ final class StepsConfig
             [
                 'id' => 'extractor-1',
                 'type' => self::TYPE_EXTRACTOR,
-                'name' => 'CSV',
+                'name' => 'Csv',
                 'object' => 'CsvExtractor',
                 'description' => 'Extract rows from a CSV file using delimiter, enclosure, and optional column subset.'
             ],
@@ -33,21 +33,21 @@ final class StepsConfig
             [
                 'id' => 'extractor-3',
                 'type' => self::TYPE_EXECUTION_EXTRACTOR,
-                'name' => 'Find Missing From Sequence',
+                'name' => 'Find Missing',
                 'object' => 'FindMissingFromSequenceExtractor',
                 'description' => 'Given a numeric sequence, find which values are missing (execution-time extractor).'
             ],
             [
                 'id' => 'extractor-4',
                 'type' => self::TYPE_EXTRACTOR,
-                'name' => 'JSON',
+                'name' => 'Json',
                 'object' => 'JsonExtractor',
                 'description' => 'Extract data from JSON input, optionally selecting specific fields.'
             ],
             [
                 'id' => 'extractor-5',
                 'type' => self::TYPE_EXTRACTOR,
-                'name' => 'TXT',
+                'name' => 'Txt',
                 'object' => 'TxtExtractor',
                 'description' => 'Extract lines from a plain text file as rows.'
             ],
