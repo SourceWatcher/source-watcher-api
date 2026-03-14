@@ -109,6 +109,18 @@ class RunTransformationController extends Controller
     {
         try {
             $this->runPipeline($steps);
+        } catch (StepFailureException $e) {
+            $response = $this->makeArrayResponse(ResponseCodes::INTERNAL_SERVER_ERROR, [
+                'message' => 'Pipeline execution failed.',
+                'error' => $e->getMessage(),
+                'stepIndex' => $e->getStepIndex(),
+                'stepName' => $e->getStepName(),
+            ]);
+            header($response['status_code_header']);
+            if ($response['body']) {
+                echo $response['body'];
+            }
+            return;
         } catch (SourceWatcherException $e) {
             $response = $this->makeArrayResponse(ResponseCodes::INTERNAL_SERVER_ERROR, [
                 'message' => 'Pipeline execution failed.',
@@ -147,57 +159,62 @@ class RunTransformationController extends Controller
      *
      * @param array<int, array{type: string, name: string, options?: array}> $steps
      * @throws SourceWatcherException
+     * @throws StepFailureException when a step throws (carries step index and name for error reporting)
      */
     private function runPipeline(array $steps): void
     {
         $sourceWatcher = new SourceWatcher();
 
-        foreach ($steps as $step) {
+        foreach ($steps as $index => $step) {
             $type = $step['type'] ?? '';
-            $name = $step['name'] ?? '';
+            $name = (string) ($step['name'] ?? '');
             $options = $step['options'] ?? [];
             if (isset($step['description']) && is_string($step['description'])) {
                 $options['description'] = $step['description'];
             }
 
-            if ($type === 'extractor') {
-                if ($name === 'Csv') {
-                    $filePath = $options['filePath'] ?? '';
-                    if ($filePath === '') {
-                        throw new SourceWatcherException('Csv extractor requires options.filePath.');
+            try {
+                if ($type === 'extractor') {
+                    if ($name === 'Csv') {
+                        $filePath = $options['filePath'] ?? '';
+                        if ($filePath === '') {
+                            throw new SourceWatcherException('Csv extractor requires options.filePath.');
+                        }
+                        $input = new FileInput($filePath);
+                        $extractorOptions = array_filter([
+                            'columns' => $options['columns'] ?? null,
+                            'delimiter' => $options['delimiter'] ?? null,
+                            'enclosure' => $options['enclosure'] ?? null,
+                        ], fn($v) => $v !== null && $v !== '');
+                        $sourceWatcher->extract('Csv', $input, $extractorOptions);
+                    } else {
+                        throw new SourceWatcherException('Unsupported extractor: ' . $name);
                     }
-                    $input = new FileInput($filePath);
-                    $extractorOptions = array_filter([
-                        'columns' => $options['columns'] ?? null,
-                        'delimiter' => $options['delimiter'] ?? null,
-                        'enclosure' => $options['enclosure'] ?? null,
-                    ], fn($v) => $v !== null && $v !== '');
-                    $sourceWatcher->extract('Csv', $input, $extractorOptions);
-                } else {
-                    throw new SourceWatcherException('Unsupported extractor: ' . $name);
+                    continue;
                 }
-                continue;
-            }
 
-            if ($type === 'transformer') {
-                if (strtolower($name) === 'convertcase') {
-                    $options = $this->normalizeConvertCaseMode($options);
+                if ($type === 'transformer') {
+                    if (strtolower($name) === 'convertcase') {
+                        $options = $this->normalizeConvertCaseMode($options);
+                    }
+                    $sourceWatcher->transform($name, $options);
+                    continue;
                 }
-                $sourceWatcher->transform($name, $options);
-                continue;
-            }
 
-            if ($type === 'loader') {
-                if ($name === 'Database') {
-                    $output = $this->buildDatabaseOutput($options);
-                    $sourceWatcher->load('Database', $output, []);
-                } else {
-                    throw new SourceWatcherException('Unsupported loader: ' . $name);
+                if ($type === 'loader') {
+                    if ($name === 'Database') {
+                        $output = $this->buildDatabaseOutput($options);
+                        $sourceWatcher->load('Database', $output, []);
+                    } else {
+                        throw new SourceWatcherException('Unsupported loader: ' . $name);
+                    }
+                    continue;
                 }
-                continue;
-            }
 
-            throw new SourceWatcherException('Unknown step type: ' . $type);
+                throw new SourceWatcherException('Unknown step type: ' . $type);
+            } catch (\Throwable $e) {
+                throw new StepFailureException($e->getMessage(), $index, $name, $e);
+            }
         }
 
         $sourceWatcher->run();
