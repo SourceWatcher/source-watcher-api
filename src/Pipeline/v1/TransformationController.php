@@ -7,18 +7,15 @@ use Coco\SourceWatcherApi\Framework\Controller;
 use Coco\SourceWatcherApi\Framework\ResponseCodes;
 
 /**
- * Save a transformation definition (.swt file) given a list of steps.
+ * Transformations API:
  *
- * This API does not execute the pipeline; it only persists the array
- * representation similar to SourceWatcher::save() in Core.
+ * GET  /api/v1/transformation
+ *     Returns list of saved transformation names (basenames of .swt files).
+ *     Response: { "names": ["test07", "my-pipeline", ...] }
  *
- * Expected JSON payload:
- * {
- *   "name": "optional-name",          // optional; if omitted, a random name is generated
- *   "steps": [                        // required; non-empty array of step definitions
- *     { ... }, { ... }
- *   ]
- * }
+ * POST /api/v1/transformation
+ *     Save a transformation definition (.swt file) given a list of steps.
+ *     Expected JSON: { "name": "optional", "steps": [ ... ] }
  */
 class TransformationController extends Controller
 {
@@ -26,6 +23,10 @@ class TransformationController extends Controller
 
     public function processRequest(string $requestMethod, array $extraOptions): void
     {
+        if ($requestMethod === 'GET') {
+            $this->listTransformations();
+            return;
+        }
         if ($requestMethod !== 'POST') {
             $response = $this->notFoundResponse();
             header($response['status_code_header']);
@@ -34,6 +35,55 @@ class TransformationController extends Controller
             }
             return;
         }
+        $this->saveTransformation();
+    }
+
+    private function getTransformationsDirectory(): ?string
+    {
+        $home = $_SERVER['HOME'] ?? getenv('HOME') ?: null;
+        if (empty($home)) {
+            $home = dirname(__DIR__, 3);
+        }
+        $mainDirectory = $home . DIRECTORY_SEPARATOR . '.source-watcher';
+        $transformationsDirectory = $mainDirectory . DIRECTORY_SEPARATOR . 'transformations';
+        return (is_dir($transformationsDirectory) || @mkdir($transformationsDirectory, 0777, true))
+            ? $transformationsDirectory
+            : null;
+    }
+
+    private function listTransformations(): void
+    {
+        $transformationsDirectory = $this->getTransformationsDirectory();
+        if ($transformationsDirectory === null) {
+            $response = $this->makeArrayResponse(ResponseCodes::OK, ['names' => []]);
+            header($response['status_code_header']);
+            if ($response['body']) {
+                echo $response['body'];
+            }
+            return;
+        }
+        $names = [];
+        $files = @scandir($transformationsDirectory);
+        if ($files !== false) {
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') {
+                    continue;
+                }
+                if (substr($file, -4) === '.swt' && is_file($transformationsDirectory . DIRECTORY_SEPARATOR . $file)) {
+                    $names[] = substr($file, 0, -4);
+                }
+            }
+        }
+        sort($names, SORT_STRING);
+        $response = $this->makeArrayResponse(ResponseCodes::OK, ['names' => $names]);
+        header($response['status_code_header']);
+        if ($response['body']) {
+            echo $response['body'];
+        }
+    }
+
+    private function saveTransformation(): void
+    {
 
         $rawBody = file_get_contents('php://input');
         $data = json_decode($rawBody ?? '', true);
@@ -73,26 +123,8 @@ class TransformationController extends Controller
         // as Coco\SourceWatcher\Core\Pipeline\SourceWatcher::save().
         $jsonRepresentation = json_encode($steps, JSON_PRETTY_PRINT);
 
-        $home = $_SERVER['HOME'] ?? getenv('HOME') ?: null;
-        if (empty($home)) {
-            // Fallback for environments (like Apache in the container) where HOME is not set.
-            // Use the web root as a base; this keeps behavior similar to Core, which expects
-            // a writable HOME-based directory, but avoids hard failures when HOME is missing.
-            $home = dirname(__DIR__, 3);
-        }
-
-        $mainDirectory = $home . DIRECTORY_SEPARATOR . '.source-watcher';
-        if (!file_exists($mainDirectory) && !@mkdir($mainDirectory, 0777, true) && !is_dir($mainDirectory)) {
-            $response = $this->makeResponse(ResponseCodes::INTERNAL_SERVER_ERROR, 'Unable to create main transformation directory.');
-            header($response['status_code_header']);
-            if ($response['body']) {
-                echo $response['body'];
-            }
-            return;
-        }
-
-        $transformationsDirectory = $mainDirectory . DIRECTORY_SEPARATOR . 'transformations';
-        if (!file_exists($transformationsDirectory) && !@mkdir($transformationsDirectory, 0777, true) && !is_dir($transformationsDirectory)) {
+        $transformationsDirectory = $this->getTransformationsDirectory();
+        if ($transformationsDirectory === null) {
             $response = $this->makeResponse(ResponseCodes::INTERNAL_SERVER_ERROR, 'Unable to create transformations directory.');
             header($response['status_code_header']);
             if ($response['body']) {
