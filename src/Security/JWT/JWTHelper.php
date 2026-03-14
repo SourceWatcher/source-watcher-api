@@ -57,7 +57,7 @@ class JWTHelper
             }
 
             $iat = $jwtDecoded->iat;
-            $iat_is_valid = !empty($iat) && $iat < time();
+            $iat_is_valid = !empty($iat) && $iat <= time();
 
             if (!$iat_is_valid) {
                 return false;

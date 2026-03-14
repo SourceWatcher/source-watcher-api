@@ -117,9 +117,11 @@ class CredentialsController extends Controller
         }
 
         $expiresAt = strtotime(SecurityConstants::JWT_EXPIRATION_TIME);
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
-        setcookie('access_token', $accessToken, $expiresAt, '/', 'localhost', true);
-        setcookie('refresh_token', $refreshToken, $expiresAt, '/', 'localhost', true);
+        setcookie('access_token', $accessToken, $expiresAt, '/', 'localhost', $secure);
+        setcookie('refresh_token', $refreshToken, $expiresAt, '/', 'localhost', $secure);
 
         $response = ['accessToken' => $accessToken, 'refreshToken' => $refreshToken];
 
