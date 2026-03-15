@@ -187,6 +187,17 @@ class RunTransformationController extends Controller
                             'enclosure' => $options['enclosure'] ?? null,
                         ], fn($v) => $v !== null && $v !== '');
                         $sourceWatcher->extract('Csv', $input, $extractorOptions);
+                    } elseif ($name === 'Json') {
+                        $filePath = $options['filePath'] ?? '';
+                        if ($filePath === '') {
+                            throw new SourceWatcherException('Json extractor requires options.filePath.');
+                        }
+                        $input = new FileInput($filePath);
+                        $extractorOptions = [];
+                        if (isset($options['columns']) && is_array($options['columns']) && $options['columns'] !== []) {
+                            $extractorOptions['columns'] = $options['columns'];
+                        }
+                        $sourceWatcher->extract('Json', $input, $extractorOptions);
                     } else {
                         throw new SourceWatcherException('Unsupported extractor: ' . $name);
                     }
