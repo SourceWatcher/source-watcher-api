@@ -115,6 +115,13 @@ final class StepsConfig
                 'description' => 'Remove duplicate rows using one or more configurable key fields.'
             ],
             [
+                'id' => 'transformer-8',
+                'type' => self::TYPE_TRANSFORMER,
+                'name' => 'Choose Columns',
+                'object' => 'ChooseColumnsTransformer',
+                'description' => 'Keep or remove configured columns from every row.'
+            ],
+            [
                 'id' => 'loader-1',
                 'type' => self::TYPE_LOADER,
                 'name' => 'Database',

@@ -15,7 +15,7 @@ use Coco\SourceWatcherApi\Framework\ResponseCodes;
  *
  * POST /api/v1/transformation
  *     Save a transformation definition (.json pipeline file) given a list of steps.
- *     Expected JSON: { "name": "optional", "steps": [ ... ] }
+ *     Expected JSON: { "name": "optional", "notes": "optional", "steps": [ ... ] }
  */
 class TransformationController extends Controller
 {
@@ -101,9 +101,13 @@ class TransformationController extends Controller
         }
 
         if (isset($decoded['steps']) && is_array($decoded['steps'])) {
-            $payload = ['name' => $name, 'steps' => $decoded['steps']];
+            $payload = [
+                'name' => $name,
+                'notes' => isset($decoded['notes']) && is_string($decoded['notes']) ? $decoded['notes'] : '',
+                'steps' => $decoded['steps'],
+            ];
         } elseif (is_array($decoded)) {
-            $payload = ['name' => $name, 'steps' => $decoded];
+            $payload = ['name' => $name, 'notes' => '', 'steps' => $decoded];
         } else {
             $response = $this->makeResponse(ResponseCodes::BAD_REQUEST, 'Transformation file is invalid.');
             header($response['status_code_header']);
@@ -187,11 +191,22 @@ class TransformationController extends Controller
         }
 
         $name = is_string($name) ? trim($name) : null;
+        $notes = $data['notes'] ?? '';
+
+        if (!is_string($notes)) {
+            $response = $this->makeResponse(ResponseCodes::BAD_REQUEST, 'Field "notes" must be a string when provided.');
+            header($response['status_code_header']);
+            if ($response['body']) {
+                echo $response['body'];
+            }
+            return;
+        }
 
         // Persist the pipeline as a JSON object with a $schema reference, following the same
         // directory structure as Coco\SourceWatcher\Core\Pipeline\SourceWatcher::save().
         $pipeline = [
             '$schema' => 'https://raw.githubusercontent.com/TheCocoTeam/source-watcher-api/master/pipeline.schema.json',
+            'notes'    => $notes,
             'steps'   => $steps,
         ];
         $jsonRepresentation = json_encode($pipeline, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -234,4 +249,3 @@ class TransformationController extends Controller
         }
     }
 }
-

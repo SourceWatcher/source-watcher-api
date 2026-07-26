@@ -11,6 +11,10 @@
       "type": "string",
       "description": "JSON Schema reference for this file."
     },
+    "notes": {
+      "type": "string",
+      "description": "Optional human-readable notes describing the transformation."
+    },
     "steps": {
       "type": "array",
       "description": "Ordered list of pipeline steps. Must contain at least one extractor and one loader.",
