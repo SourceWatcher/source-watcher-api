@@ -1,7 +1,7 @@
-# API server: PHP 8.4 Apache (aligned with board and dev PHP 8.4).
+# API server: PHP 8.5 Apache (aligned with Core's php ^8.5 requirement; board remains on 8.4).
 # Build from parent directory so Core is available (see docker-compose build context).
 # Rebuild after changes: docker compose build api
-FROM php:8.4-apache
+FROM php:8.5-apache
 
 RUN apt-get update -y && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends libzip-dev libpq-dev libonig-dev tesseract-ocr poppler-utils \
