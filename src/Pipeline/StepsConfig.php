@@ -94,6 +94,27 @@ final class StepsConfig
                 'description' => 'Rename columns according to a mapping of old_name -> new_name.'
             ],
             [
+                'id' => 'transformer-5',
+                'type' => self::TYPE_TRANSFORMER,
+                'name' => 'Filter Rows',
+                'object' => 'FilterRowsTransformer',
+                'description' => 'Keep rows that match one or more configurable conditions.'
+            ],
+            [
+                'id' => 'transformer-6',
+                'type' => self::TYPE_TRANSFORMER,
+                'name' => 'Sort Rows',
+                'object' => 'SortRowsTransformer',
+                'description' => 'Stably sort rows by one or more numeric, text, or date fields.'
+            ],
+            [
+                'id' => 'transformer-7',
+                'type' => self::TYPE_TRANSFORMER,
+                'name' => 'Deduplicate Rows',
+                'object' => 'DeduplicateRowsTransformer',
+                'description' => 'Remove duplicate rows using one or more configurable key fields.'
+            ],
+            [
                 'id' => 'loader-1',
                 'type' => self::TYPE_LOADER,
                 'name' => 'Database',

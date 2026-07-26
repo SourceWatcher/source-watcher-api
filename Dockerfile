@@ -11,7 +11,9 @@ RUN apt-get update -y && apt-get upgrade -y \
 
 # Context must be parent dir (source-watcher-dev-env) so both api and core exist
 COPY source-watcher-api /var/www/html
-COPY source-watcher-core /var/www/html/source-watcher-core
+# Composer's local path-repository symlink resolves from
+# /var/www/html/vendor/coco/source-watcher to /var/www/source-watcher-core.
+COPY source-watcher-core /var/www/source-watcher-core
 
 RUN mkdir -p /var/www/html/.source-watcher/transformations \
     && chown -R www-data:www-data /var/www/html/.source-watcher
