@@ -1,0 +1,6 @@
+id,first_name,last_name,email,status,price,quantity,created_at
+1,Avery,Ruiz,avery@example.com,active,12.50,2,2026-01-10
+2,Robin,Smith,robin@example.com,inactive,8.25,4,2026-01-12
+3,Maria,Garcia,maria@example.com,active,30.00,1,2026-02-01
+1,Avery,Ruiz,avery@example.com,active,14.00,3,2026-03-15
+4,John,Doe,john@example.com,active,5.75,10,2026-02-20

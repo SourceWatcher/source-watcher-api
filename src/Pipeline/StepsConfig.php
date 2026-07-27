@@ -129,6 +129,20 @@ final class StepsConfig
                 'description' => 'Create or replace a field using a safe expression over the current row.'
             ],
             [
+                'id' => 'transformer-10',
+                'type' => self::TYPE_TRANSFORMER,
+                'name' => 'Type Conversion',
+                'object' => 'TypeConversionTransformer',
+                'description' => 'Convert configured fields to integer, float, string, boolean, date, or datetime.'
+            ],
+            [
+                'id' => 'transformer-11',
+                'type' => self::TYPE_TRANSFORMER,
+                'name' => 'Validate Rows',
+                'object' => 'ValidateRowsTransformer',
+                'description' => 'Validate row fields and either fail the pipeline or annotate invalid rows.'
+            ],
+            [
                 'id' => 'loader-1',
                 'type' => self::TYPE_LOADER,
                 'name' => 'Database',
