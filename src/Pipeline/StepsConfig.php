@@ -122,6 +122,13 @@ final class StepsConfig
                 'description' => 'Keep or remove configured columns from every row.'
             ],
             [
+                'id' => 'transformer-9',
+                'type' => self::TYPE_TRANSFORMER,
+                'name' => 'Derive Field',
+                'object' => 'DeriveFieldTransformer',
+                'description' => 'Create or replace a field using a safe expression over the current row.'
+            ],
+            [
                 'id' => 'loader-1',
                 'type' => self::TYPE_LOADER,
                 'name' => 'Database',
