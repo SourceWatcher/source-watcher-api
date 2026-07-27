@@ -13,7 +13,7 @@ final class UserSeeder extends AbstractSeed
     public function run(): void
     {
         try {
-            $username = 'jpruiz114';
+            $username = 'admin';
 
             $existing = $this->fetchRow( "SELECT id FROM users WHERE username = '" . $username . "'" );
 
@@ -26,8 +26,8 @@ final class UserSeeder extends AbstractSeed
             $data = [
                 [
                     'username' => $username,
-                    'password' => password_hash( 'secret', PASSWORD_DEFAULT, $options ),
-                    'email' => 'jpruiz114@gmail.com'
+                    'password' => password_hash( 'test', PASSWORD_DEFAULT, $options ),
+                    'email' => 'admin@localhost'
                 ]
             ];
 
